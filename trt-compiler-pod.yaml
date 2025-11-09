@@ -18,7 +18,7 @@ spec:
     effect: "NoSchedule"
   containers:
     - name: trtexec
-      image: nvcr.io/nvidia/tritonserver:24.05-py3
+      image: nvcr.io/nvidia/tensorrt:24.05-py3
       command: ["/bin/sh", "-c"]
       args:
         - |

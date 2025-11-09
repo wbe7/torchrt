@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trt-compiler-job
+  namespace: torchrt
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+      containers:
+        - name: trtexec
+          image: nvcr.io/nvidia/tensorrt:24.05-py3
+          command: ["/bin/sh", "-c"]
+          args:
+            - | 
+              trtexec --onnx=/models/california_housing_onnx/1/model.onnx \
+                      --saveEngine=/models/california_housing_trt/1/model.plan \
+                      --minShapes=input:1x8 \
+                      --optShapes=input:8x8 \
+                      --maxShapes=input:16x8 \
+                      --fp16
+          resources:
+            requests:
+              memory: "8Gi"
+            limits:
+              memory: "16Gi"
+              nvidia.com/gpu: 1
+          volumeMounts:
+            - name: models-volume
+              mountPath: /models
+      volumes:
+        - name: models-volume
+          hostPath:
+            path: /home/mtik/src/torchrt/models
+            type: Directory
+  backoffLimit: 2
