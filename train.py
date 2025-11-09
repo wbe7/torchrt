@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import os
 
 # Устанавливаем device
 if torch.cuda.is_available():
@@ -124,3 +125,28 @@ with torch.no_grad():
 print()
 print(f"MSE на валидации: {mse_val.item():.5f}")
 print(f"MAE на валидации: {mae_val.item():.5f}")
+
+# --- Export to ONNX ---
+print("\nЭкспорт модели в ONNX...")
+
+onnx_model_dir = "models/california_housing_onnx/1"
+os.makedirs(onnx_model_dir, exist_ok=True)
+onnx_model_path = os.path.join(onnx_model_dir, "model.onnx")
+
+dummy_input = torch.randn(1, 8).to(device)
+model.eval()
+
+torch.onnx.export(
+    model,
+    dummy_input,
+    onnx_model_path,
+    input_names=["input"],
+    output_names=["output"],
+    dynamic_axes={
+        "input": {0: "batch_size"},
+        "output": {0: "batch_size"}
+    },
+    opset_version=11
+)
+
+print(f"Модель успешно экспортирована в {onnx_model_path}")

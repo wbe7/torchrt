@@ -1,6 +1,9 @@
 # ML
 torch
 pandas
+onnx
+onnxruntime
+onnxscript
 
 # Utilities
 python-dotenv
