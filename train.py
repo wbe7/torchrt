@@ -28,28 +28,43 @@ print(f"std: {std.shape}")
 print()
 
 
-# Model
+# Model с Dropout и BatchNorm (оптимальный размер 256)
 model = nn.Sequential(
-    nn.Linear(8, 64),
+    nn.Linear(8, 256),
+    nn.BatchNorm1d(256),
     nn.ReLU(),
+    nn.Dropout(0.3),
+    nn.Linear(256, 128),
+    nn.BatchNorm1d(128),
+    nn.ReLU(),
+    nn.Dropout(0.3),
+    nn.Linear(128, 64),
+    nn.BatchNorm1d(64),
+    nn.ReLU(),
+    nn.Dropout(0.2),
     nn.Linear(64, 32),
+    nn.BatchNorm1d(32),
     nn.ReLU(),
-    nn.Linear(32, 16),
-    nn.ReLU(),
-    nn.Linear(16, 1)
+    nn.Dropout(0.2),
+    nn.Linear(32, 1)
 ).to(device)
 
 print(f"Модель: {model}")
 print()
 
 
-# Loss FN + Optimizer
+# Loss FN + Optimizer с weight decay (L2 регуляризация)
 loss_fn = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
+
+# Learning rate scheduler для адаптивного уменьшения LR
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=200
+)
 
 
 # Обучение с early stopping
-num_epochs = 100000
+num_epochs = 10000
 best_val_loss = float('inf')
 patience = 500  # Остановка если нет улучшения 500 эпох (50 проверок * 10 эпох)
 patience_counter = 0
@@ -75,6 +90,10 @@ for epoch in range(num_epochs):
         
         # Early stopping логика
         val_loss_value = val_loss.item()
+        
+        # Обновляем learning rate scheduler
+        scheduler.step(val_loss_value)
+        
         if val_loss_value < best_val_loss:
             best_val_loss = val_loss_value
             patience_counter = 0
