@@ -48,10 +48,16 @@ loss_fn = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
-# Обучение
+# Обучение с early stopping
 num_epochs = 100000
+best_val_loss = float('inf')
+patience = 500  # Остановка если нет улучшения 500 эпох (50 проверок * 10 эпох)
+patience_counter = 0
+best_model_state = None
+
 for epoch in range(num_epochs):
     # Forward pass
+    model.train()
     y_hat = model(X_train)
     loss = loss_fn(y_hat, y_train)
 
@@ -60,10 +66,36 @@ for epoch in range(num_epochs):
     loss.backward()
     optimizer.step()
 
+    # Проверка на валидации каждые 10 эпох
+    if (epoch + 1) % 10 == 0:
+        model.eval()
+        with torch.no_grad():
+            y_hat_val = model(X_val)
+            val_loss = loss_fn(y_hat_val, y_val)
+        
+        # Early stopping логика
+        val_loss_value = val_loss.item()
+        if val_loss_value < best_val_loss:
+            best_val_loss = val_loss_value
+            patience_counter = 0
+            # Сохраняем состояние лучшей модели
+            best_model_state = model.state_dict().copy()
+        else:
+            patience_counter += 10  # Увеличиваем на 10, т.к. проверяем каждые 10 эпох
+            if patience_counter >= patience:
+                print(f"Early stopping на эпохе {epoch + 1}")
+                break
+    
+    # Вывод каждые 100 эпох
     if (epoch + 1) % 100 == 0:
-        print(f"Эпоха: {epoch + 1}/{num_epochs}. Ошибка: {loss.item():.5f}")
+        print(f"Эпоха: {epoch + 1}/{num_epochs}. Train: {loss.item():.5f}, Best Val: {best_val_loss:.5f}, Current Val: {val_loss_value:.5f}")
 
-# Валидация
+# Загружаем лучшую модель
+if best_model_state is not None:
+    model.load_state_dict(best_model_state)
+    print(f"\nЗагружена лучшая модель (val_loss: {best_val_loss:.5f})")
+
+# Финальная валидация
 model.eval()
 with torch.no_grad():
     y_hat_val = model(X_val)
