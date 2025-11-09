@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: torchrt
+  labels:
+    security.deckhouse.io/pod-policy: privileged
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: trt-compiler
+  namespace: torchrt
+spec:
+  restartPolicy: Never
+  tolerations:
+  - key: "nvidia.com/gpu"
+    operator: "Exists"
+    effect: "NoSchedule"
+  containers:
+    - name: trtexec
+      image: nvcr.io/nvidia/tritonserver:24.05-py3
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          trtexec --onnx=/models/california_housing_onnx/1/model.onnx \
+                  --saveEngine=/models/california_housing_trt/1/model.plan \
+                  --minShapes=input:1x8 \
+                  --optShapes=input:8x8 \
+                  --maxShapes=input:16x8 \
+                  --fp16
+      volumeMounts:
+        - name: models-volume
+          mountPath: /models
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+  volumes:
+    - name: models-volume
+      hostPath:
+        path: /home/mtik/src/torchrt/models
+        type: Directory
