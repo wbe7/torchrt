@@ -1,0 +1,18 @@
+apiVersion: "serving.kserve.io/v1beta1"
+kind: "InferenceService"
+metadata:
+  name: "california-housing"
+  namespace: "torchrt"
+spec:
+  predictor:
+    triton:
+      storageUri: "s3://models/torchrt/models/california_housing_trt"
+      resources:
+        requests:
+          cpu: "1"
+          memory: "1Gi"
+          nvidia.com/gpu: "1"
+        limits:
+          cpu: "2"
+          memory: "4Gi"
+          nvidia.com/gpu: "1"

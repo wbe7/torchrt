@@ -1,0 +1,45 @@
+# 1. The secret with KServe annotations, in the 'torchrt' namespace
+apiVersion: v1
+kind: Secret
+metadata:
+  name: torchrt-s3-secret
+  namespace: torchrt
+  annotations:
+    serving.kserve.io/s3-endpoint: "192.168.77.7:9000"
+    serving.kserve.io/s3-usehttps: "0"
+    serving.kserve.io/s3-region: ""
+    serving.kserve.io/s3-useanoncredential: "false"
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: <YOUR_ACCESS_KEY_ID>
+  AWS_SECRET_ACCESS_KEY: <YOUR_SECRET_ACCESS_KEY>
+---
+# 2. The Service Account that will use the secret
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: torchrt-sa
+  namespace: torchrt
+secrets:
+- name: torchrt-s3-secret
+---
+# 3. The updated InferenceService using the Service Account
+apiVersion: "serving.kserve.io/v1beta1"
+kind: "InferenceService"
+metadata:
+  name: "california-housing"
+  namespace: "torchrt"
+spec:
+  predictor:
+    serviceAccountName: torchrt-sa
+    triton:
+      storageUri: "s3://models/torchrt/models/"
+      resources:
+        requests:
+          cpu: "1"
+          memory: "1Gi"
+          nvidia.com/gpu: "1"
+        limits:
+          cpu: "2"
+          memory: "4Gi"
+          nvidia.com/gpu: "1"

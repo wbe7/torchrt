@@ -1,5 +1,5 @@
-name: "california_housing_onnx"
-platform: "onnxruntime_onnx"
+name: "california_housing_trt"
+platform: "tensorrt_plan"
 max_batch_size: 0
 
 instance_group [
