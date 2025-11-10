@@ -9,3 +9,7 @@ onnxscript
 python-dotenv
 tqdm
 
+# FastAPI Proxy Service
+fastapi
+uvicorn
+requests

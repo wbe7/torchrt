@@ -1,0 +1,18 @@
+apiVersion: v2
+name: torchrt
+description: A Helm chart for Kubernetes
+
+# A chart can be either an application or a library chart.
+#
+# Application charts are a collection of templates that can be deployed as a Kubernetes application.
+# Library charts provide useful utilities or functions for the chart developer. They
+# will be included as a dependency of other charts.
+type: application
+
+# This is the chart version. This version number should be incremented each time you
+# make changes to the chart and its templates, including the app version.
+version: 0.1.0
+
+# This is the version number of the application being deployed. This version number
+# is shown in Helm status output. Kubernetes metadata and Helm hooks.
+appVersion: 0.1.0

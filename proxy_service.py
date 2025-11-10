@@ -1,6 +1,5 @@
 import os
 import torch
-import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
@@ -25,17 +24,23 @@ except Exception as e:
 
 # URL KServe InferenceService
 # Должен быть установлен как переменная окружения
-KSERVE_URL = os.getenv("KSERVE_URL", "https://california-housing-torchrt.kserve.cloudnative.space/v2/models/california_housing_trt/infer")
+KSERVE_URL = os.getenv("KSERVE_URL", "https://california-housing-torchrt.kserve.cloudnative.space:7443/v2/models/california_housing_trt/infer")
 print(f"KServe URL: {KSERVE_URL}")
 
 # Модель для входных данных
 class InferenceInput(BaseModel):
-    features: list[float] # Список из 8 float значений
+    MedInc: float
+    HouseAge: float
+    AveRooms: float
+    AveBedrms: float
+    Population: float
+    AveOccup: float
+    Latitude: float
+    Longitude: float
 
-    # Валидация, что список содержит ровно 8 элементов
-    def model_post_init(self, __context):
-        if len(self.features) != 8:
-            raise ValueError("Input features must contain exactly 8 float values.")
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 @app.post("/predict")
 async def predict(input_data: InferenceInput):
@@ -43,7 +48,16 @@ async def predict(input_data: InferenceInput):
         raise HTTPException(status_code=500, detail="Normalization parameters (mean/std) not loaded.")
 
     # Преобразование входных данных в тензор PyTorch
-    features_tensor = torch.tensor(input_data.features, dtype=torch.float32)
+    features_tensor = torch.tensor([
+        input_data.MedInc,
+        input_data.HouseAge,
+        input_data.AveRooms,
+        input_data.AveBedrms,
+        input_data.Population,
+        input_data.AveOccup,
+        input_data.Latitude,
+        input_data.Longitude
+    ], dtype=torch.float32)
 
     # Нормализация данных
     normalized_features = (features_tensor - mean) / std
@@ -57,7 +71,7 @@ async def predict(input_data: InferenceInput):
             {
                 "name": "input", # Имя входного тензора, как в config.pbtxt
                 "shape": [1, 8], # Батч 1, 8 признаков
-                "data_type": "FP32", # Тип данных
+                "datatype": "FP32", # Тип данных
                 "data": [normalized_features_list] # Данные
             }
         ]
